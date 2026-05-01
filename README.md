@@ -11,7 +11,7 @@ NarutoHandSign/
 ├── collect_data.py          # Step 1: Collect hand sign images via webcam (CNN dataset)
 ├── collect_landmarks.py     # Step 2: Collect hand landmarks via MediaPipe (GNN dataset)
 ├── screen_capture.py        # Optional: Capture screen region for the dataset
-├── train.ipynb              # Step 3: Train MobileNetV2 + SqueezeNet1_1 (CNN)
+├── train.ipynb              # Step 3: Train MobileNetV2  (CNN)
 ├── train_gnn.ipynb          # Step 4: Train Graph Attention Network (GNN)
 ├── inference.py             # Step 5: Real-time inference (choose CNN or GNN at startup)
 ├── data/
@@ -19,13 +19,9 @@ NarutoHandSign/
 │   └── landmarks_gnn.csv    # GNN dataset — 42 landmarks per sample
 ├── model/
 │   ├── mobilenet_v2.pt      # Trained MobileNetV2 weights
-│   ├── squeezenet1_1.pt     # Trained SqueezeNet1_1 weights
 │   ├── gnn.pt               # Trained GAT weights
 │   ├── label_map.json       # CNN class index → label
 │   ├── label_map_gnn.json   # GNN class index → label
-│   ├── acc_curves.png       # MobileNetV2 + SqueezeNet train/val accuracy curves
-│   ├── squeezenet_acc_curve.png
-│   └── gnn_acc_curve.png    # GAT train/val accuracy curve
 ├── hand_landmarker.task     # MediaPipe hand landmark model (auto-downloaded)
 └── requirements.txt
 ```
@@ -74,7 +70,7 @@ pip install torch-geometric
 ```bash
 python collect_data.py
 ```
-- Opens webcam with a fixed 400×400 center crop box
+- Opens webcam with a fixed 500x500 center crop box
 - Press `0–9`, `a`, `b` to save a sample for that class
 - Press `q` to quit
 
@@ -87,8 +83,8 @@ python collect_landmarks.py
 
 ### Step 3 — Train CNN
 Open and run `train.ipynb`:
-- Trains **MobileNetV2** and **SqueezeNet1_1** with transfer learning
-- 75% of backbone frozen, custom classifier head
+- Trains **MobileNetV2** with transfer learning
+- 80% of backbone frozen, custom classifier head
 - Early stopping (patience = 8), cosine LR schedule
 - Plots train vs val accuracy for both models
 
@@ -106,7 +102,7 @@ python inference.py
 - Choose mode at startup:
   - `1` — CNN (MobileNetV2, crops 500×500 region centered on detected hand)
   - `2` — GNN (GAT, uses 42-node hand landmark graph)
-- Hold a sign steady for **8 frames** at confidence ≥ 0.75 to confirm it
+- Hold a sign steady for **15 frames** at confidence ≥ 0.75 to confirm it
 - Confirmed signs build up in a rolling buffer → jutsu name displayed on match
 - Press `q` to quit
 
@@ -116,9 +112,8 @@ python inference.py
 
 | Model         | Input              | Trainable Params | Val Accuracy | Stopped  |
 |---------------|--------------------|------------------|--------------|----------|
-| MobileNetV2   | 500×500 image crop | ~2M              | 97.4%        | Epoch 17 |
-| SqueezeNet1_1 | 500×500 image crop | ~608K            | 96.6%        | Epoch 16 |
-| GAT (4-layer) | 42-node hand graph | ~300K            | 98.7%        | Epoch 20 |
+| MobileNetV2   | 500×500 image crop | ~1.8M            | 98.4%        | Epoch 13 |
+| GAT (4-layer) | 42-node hand graph | ~300K            | 97.9%        | Epoch 44 |
 
 ---
 
@@ -129,7 +124,7 @@ python inference.py
 | Input           | Raw pixel image crop          | Hand landmark coordinates           |
 | Strength        | Captures texture & appearance | Invariant to lighting & background  |
 | Weakness        | Sensitive to lighting/angle   | Requires accurate hand detection    |
-| Dataset size    | 784 images (53–78 per class)  | 1,040 landmark samples              |
+| Dataset size    | 5354 images   | 1,040 landmark samples              |
 
 ---
 
